@@ -65,28 +65,35 @@ def test_sync_http_mocked(monkeypatch):
     class FakeResp:
         status_code = 200
 
-    def fake_get(*args, **kwargs):
-        return FakeResp()
+    class FakeSession:
+        def get(self, *args, **kwargs):
+            return FakeResp()
 
-    monkeypatch.setattr("apiapp.main.requests_session.get", fake_get, raising=True)
+    # Patch the whole instance BEFORE first request
+    monkeypatch.setattr("apiapp.main.requests_session", FakeSession(), raising=False)
 
     r = client.get("/sync-http")
     assert r.status_code == 200
-    assert r.json()["ok"] is True
-    assert r.json()["status"] == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert body["status"] == 200
+
 
 @pytest.mark.asyncio
 async def test_async_http_mocked(monkeypatch):
     class FakeResp:
         status_code = 200
 
-    async def fake_get(*args, **kwargs):
-        return FakeResp()
+    class FakeAsyncClient:
+        async def get(self, *args, **kwargs):
+            return FakeResp()
 
-    # ✅ patch the actual async client instance
-    monkeypatch.setattr("apiapp.main.async_client.get", fake_get, raising=True)
+    # Patch the whole instance BEFORE first request
+    monkeypatch.setattr("apiapp.main.async_client", FakeAsyncClient(), raising=False)
 
     r = client.get("/async-http")
     assert r.status_code == 200
-    assert r.json()["ok"] is True
-    assert r.json()["status"] == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert body["status"] == 200
+
