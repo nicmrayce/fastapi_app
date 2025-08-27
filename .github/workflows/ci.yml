@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: CI
 
 on:
@@ -18,8 +19,20 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Show Python
-        run: python --version
+      # >>> Add repo root to PYTHONPATH so `import apiapp` works
+      - name: Add repo to PYTHONPATH
+        run: echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      # Optional: quick sanity prints
+      - name: Show Python / path
+        run: |
+          python --version
+          python - << 'PY'
+          import os, sys
+          print("CWD:", os.getcwd())
+          print("Has apiapp dir? ", "apiapp" in os.listdir("."))
+          print("sys.path[0:3]:", sys.path[0:3])
+          PY
 
       - name: Install dependencies
         run: |
