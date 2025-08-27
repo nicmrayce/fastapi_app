@@ -48,7 +48,7 @@ def test_background_enqueues_ok(monkeypatch):
     assert r.json() == {"enqueued": True}
 
 @pytest.mark.parametrize("text,expected_key", [
-    ("I love FastAPI!", "ok"),  # your client returns a dict-like payload
+    ("I love FastAPI!", "ok"),
 ])
 def test_hf_sentiment_mocked(monkeypatch, text, expected_key):
     async def fake_sentiment(self, t: str):
@@ -64,22 +64,29 @@ def test_hf_sentiment_mocked(monkeypatch, text, expected_key):
 def test_sync_http_mocked(monkeypatch):
     class FakeResp:
         status_code = 200
+
     def fake_get(*args, **kwargs):
         return FakeResp()
 
-    monkeypatch.setattr("requests.Session.get", fake_get)
+    monkeypatch.setattr("apiapp.main.requests_session.get", fake_get, raising=True)
+
     r = client.get("/sync-http")
     assert r.status_code == 200
     assert r.json()["ok"] is True
+    assert r.json()["status"] == 200
 
 @pytest.mark.asyncio
 async def test_async_http_mocked(monkeypatch):
     class FakeResp:
         status_code = 200
-    async def fake_get(self, *args, **kwargs):
+
+    async def fake_get(*args, **kwargs):
         return FakeResp()
 
-    monkeypatch.setattr("httpx.AsyncClient.get", fake_get)
+    # ✅ patch the actual async client instance
+    monkeypatch.setattr("apiapp.main.async_client.get", fake_get, raising=True)
+
     r = client.get("/async-http")
     assert r.status_code == 200
     assert r.json()["ok"] is True
+    assert r.json()["status"] == 200
